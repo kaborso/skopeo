@@ -39,19 +39,24 @@ CREATE TRIGGER period_insert AFTER INSERT ON periods BEGIN
     UPDATE periods SET next = new.id WHERE next IS new.next AND id != new.id;
     UPDATE periods SET previous = new.previous WHERE previous IS new.previous
         AND id != new.id;
-    UPDATE games SET mtime = datetime("now") WHERE id = new.game_id;
+    UPDATE periods SET ctime = datetime("now") WHERE id = new.id;
+    UPDATE periods SET mtime = datetime("now") WHERE id = new.id;
 END;
 
 CREATE TRIGGER event_insert AFTER INSERT ON events BEGIN 
     UPDATE events SET next = new.id WHERE next IS new.next AND id != new.id;
     UPDATE events SET previous = new.previous WHERE previous IS new.previous
         AND id != new.id;
+    UPDATE events SET ctime = datetime("now") WHERE id = new.id;
+    UPDATE events SET mtime = datetime("now") WHERE id = new.id;
 END;
 
 CREATE TRIGGER scene_insert AFTER INSERT ON scenes BEGIN 
     UPDATE scenes SET next = new.id WHERE next IS new.next AND id != new.id;
     UPDATE scenes SET previous = new.previous WHERE previous IS new.previous
         AND id != new.id;
+    UPDATE scenes SET ctime = datetime("now") WHERE id = new.id;
+    UPDATE scenes SET mtime = datetime("now") WHERE id = new.id;
 END;
 
 CREATE TRIGGER game_update AFTER UPDATE ON games BEGIN
@@ -60,30 +65,33 @@ END;
 
 CREATE TRIGGER period_update AFTER UPDATE ON periods BEGIN
     UPDATE games SET mtime = datetime("now") WHERE id = new.game_id;
+    UPDATE periods SET mtime = datetime("now") WHERE id = new.id;
 END;
 
 CREATE TRIGGER event_update AFTER UPDATE ON events BEGIN
-    UPDATE games SET mtime = datetime("now") WHERE id = 
-        (SELECT game_id FROM periods WHERE id = new.period_id);
+    UPDATE periods SET mtime = datetime("now") WHERE id = new.period_id;
+    UPDATE events SET mtime = datetime("now") WHERE id = new.id;
 END;
 
 CREATE TRIGGER scene_update AFTER UPDATE ON scenes BEGIN
-    UPDATE games SET mteim = datetime("now") WHERE id =
-        (SELECT game_id FROM periods WHERE id = 
-            (SELECT period_id FROM events WHERE id = new.event_id));
+    UPDATE events SET mtime = datetime("now") WHERE id = new.event_id;
+    UPDATE scenes SET mtime = datetime("now") WHERE id = new.id;
 END;
 
 CREATE TRIGGER period_delete AFTER DELETE ON periods BEGIN
+    UPDATE games SET mtime = datetime("now") WHERE id = new.game_id;
     UPDATE periods SET next = old.next WHERE next IS old.id;
     UPDATE periods SET previous = old.previous WHERE previous IS old.id;
 END;
 
 CREATE TRIGGER event_delete AFTER DELETE ON events BEGIN
+    UPDATE periods SET mtime = datetime("now") WHERE id = new.period_id;
     UPDATE events SET next = old.next WHERE next IS old.id;
     UPDATE events SET previous = old.previous WHERE previous IS old.id;
 END;
 
 CREATE TRIGGER scene_delete AFTER DELETE ON scenes BEGIN
+    UPDATE events SET mtime = datetime("now") WHERE id = new.event_id;
     UPDATE scenes SET next = old.next WHERE next IS old.id;
     UPDATE scenes SET previous = old.previous WHERE previous IS old.id;
 END;
