@@ -1,12 +1,12 @@
 CREATE TABLE games (id INTEGER PRIMARY KEY, name TEXT);
 
-CREATE TABLE periods (id INTEGER PRIMARY KEY, game_id REFERENCES games.id,
+CREATE TABLE periods (id INTEGER PRIMARY KEY, game_id REFERENCES games.id ON DELETE CASCADE,
     content TEXT, next INTEGER, previous INTEGER, tone TEXT);
     
-CREATE TABLE events (id INTEGER PRIMARY KEY, period_id REFERENCES periods.id,
+CREATE TABLE events (id INTEGER PRIMARY KEY, period_id REFERENCES periods.id ON DELETE CASCADE,
     content TEXT, next INTEGER, previous INTEGER, tone TEXT);
     
-CREATE TABLE scenes (id INTEGER PRIMARY KEY, event_id REFERENCES events.id, 
+CREATE TABLE scenes (id INTEGER PRIMARY KEY, event_id REFERENCES events.id ON DELETE CASCADE, 
     question TEXT, setting TEXT, answer TEXT, 
     next INTEGER, previous INTEGER, tone TEXT);
 
@@ -34,18 +34,12 @@ CREATE TRIGGER scene_insert AFTER INSERT ON scenes BEGIN
         AND id != new.id;
 END;
 
-CREATE TRIGGER game_delete AFTER DELETE ON games BEGIN
-    DELETE FROM periods WHERE game_id = old.id;
-END;
-
 CREATE TRIGGER period_delete AFTER DELETE ON periods BEGIN
-    DELETE FROM events WHERE period_id = old.id;
     UPDATE periods SET next = old.next WHERE next IS old.id;
     UPDATE periods SET previous = old.previous WHERE previous IS old.id;
 END;
 
 CREATE TRIGGER event_delete AFTER DELETE ON events BEGIN
-    DELETE FROM scenes WHERE event_id = old.id;
     UPDATE events SET next = old.next WHERE next IS old.id;
     UPDATE events SET previous = old.previous WHERE previous IS old.id;
 END;
