@@ -1,4 +1,4 @@
-CREATE TABLE games (id INTEGER PRIMARY KEY, name);
+CREATE TABLE games (id INTEGER PRIMARY KEY, name TEXT);
 CREATE TABLE periods (id INTEGER PRIMARY KEY, game_id REFERENCES games.id,
     content TEXT, next INTEGER, previous INTEGER, tone TEXT);
 CREATE TABLE events (id INTEGER PRIMARY KEY, period_id REFERENCES periods.id,
