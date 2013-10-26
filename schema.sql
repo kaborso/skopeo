@@ -30,7 +30,6 @@ CREATE INDEX event_periodid ON events (period_id);
 
 CREATE INDEX scene_eventid ON scenes (event_id);
 
-
 CREATE OR REPLACE FUNCTION game_insert() RETURNS trigger AS $$
     BEGIN
         UPDATE games SET ctime = now() WHERE id = NEW.id;
@@ -41,65 +40,116 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER game_insert AFTER INSERT ON games
     FOR EACH ROW EXECUTE PROCEDURE game_insert();
 
+CREATE OR REPLACE FUNCTION period_insert() RETURNS trigger AS $$
+    BEGIN
+        UPDATE periods SET next = NEW.id WHERE next = NEW.next AND NOT id = NEW.id;
+        UPDATE periods SET previous = NEW.previous WHERE previous = NEW.previous
+            AND NOT id = NEW.id;
+        UPDATE periods SET ctime = now() WHERE id = NEW.id;
+        UPDATE periods SET mtime = now() WHERE id = NEW.id;
+    END;
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER period_insert AFTER INSERT ON periods BEGIN
-    UPDATE periods SET next = new.id WHERE next IS new.next AND id != new.id;
-    UPDATE periods SET previous = new.previous WHERE previous IS new.previous
-        AND id != new.id;
-    UPDATE periods SET ctime = datetime("now") WHERE id = new.id;
-    UPDATE periods SET mtime = datetime("now") WHERE id = new.id;
-END;
+CREATE TRIGGER period_insert AFTER INSERT ON periods
+    FOR EACH ROW EXECUTE PROCEDURE period_insert();
 
 
-CREATE TRIGGER event_insert AFTER INSERT ON events BEGIN
-    UPDATE events SET next = new.id WHERE next IS new.next AND id != new.id;
-    UPDATE events SET previous = new.previous WHERE previous IS new.previous
-        AND id != new.id;
-    UPDATE events SET ctime = datetime("now") WHERE id = new.id;
-    UPDATE events SET mtime = datetime("now") WHERE id = new.id;
-END;
+CREATE OR REPLACE FUNCTION event_insert() RETURNS trigger AS $$
+    BEGIN
+        UPDATE events SET next = NEW.id WHERE next = NEW.next AND NOT id = NEW.id;
+        UPDATE events SET previous = NEW.previous WHERE previous = NEW.previous
+            AND NOT id = NEW.id;
+        UPDATE events SET ctime = now() WHERE id = NEW.id;
+        UPDATE events SET mtime = now() WHERE id = NEW.id;
+    END;
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER scene_insert AFTER INSERT ON scenes BEGIN
-    UPDATE scenes SET next = new.id WHERE next IS new.next AND id != new.id;
-    UPDATE scenes SET previous = new.previous WHERE previous IS new.previous
-        AND id != new.id;
-    UPDATE scenes SET ctime = datetime("now") WHERE id = new.id;
-    UPDATE scenes SET mtime = datetime("now") WHERE id = new.id;
-END;
+CREATE TRIGGER event_insert AFTER INSERT ON events
 
-CREATE TRIGGER game_update AFTER UPDATE ON games BEGIN
-    UPDATE games SET mtime = datetime("now") WHERE id = new.id;
-END;
 
-CREATE TRIGGER period_update AFTER UPDATE ON periods BEGIN
-    UPDATE games SET mtime = datetime("now") WHERE id = new.game_id;
-    UPDATE periods SET mtime = datetime("now") WHERE id = new.id;
-END;
+CREATE OR REPLACE FUNCTION scene_insert() RETURNS trigger AS $$
+    BEGIN
+        UPDATE scenes SET next = NEW.id WHERE next = NEW.next AND NOT id = NEW.id;
+        UPDATE scenes SET previous = NEW.previous WHERE previous = NEW.previous
+            AND NOT id = NEW.id;
+        UPDATE scenes SET ctime = now() WHERE id = NEW.id;
+        UPDATE scenes SET mtime = now() WHERE id = NEW.id;
+    END;
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER event_update AFTER UPDATE ON events BEGIN
-    UPDATE periods SET mtime = datetime("now") WHERE id = new.period_id;
-    UPDATE events SET mtime = datetime("now") WHERE id = new.id;
-END;
+CREATE TRIGGER scene_insert AFTER INSERT ON scenes
+    FOR EACH ROW EXECUTE PROCEDURE scene_insert();
 
-CREATE TRIGGER scene_update AFTER UPDATE ON scenes BEGIN
-    UPDATE events SET mtime = datetime("now") WHERE id = new.event_id;
-    UPDATE scenes SET mtime = datetime("now") WHERE id = new.id;
-END;
+CREATE OR REPLACE FUNCTION game_update() RETURNS trigger AS $$
+    BEGIN
+        UPDATE games SET mtime = now() WHERE id = NEW.id;
+    END;
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER period_delete AFTER DELETE ON periods BEGIN
-    UPDATE games SET mtime = datetime("now") WHERE id = new.game_id;
-    UPDATE periods SET next = old.next WHERE next IS old.id;
-    UPDATE periods SET previous = old.previous WHERE previous IS old.id;
-END;
+CREATE TRIGGER game_update AFTER UPDATE ON games
+    FOR EACH ROW EXECUTE PROCEDURE game_update();
 
-CREATE TRIGGER event_delete AFTER DELETE ON events BEGIN
-    UPDATE periods SET mtime = datetime("now") WHERE id = new.period_id;
-    UPDATE events SET next = old.next WHERE next IS old.id;
-    UPDATE events SET previous = old.previous WHERE previous IS old.id;
-END;
 
-CREATE TRIGGER scene_delete AFTER DELETE ON scenes BEGIN
-    UPDATE events SET mtime = datetime("now") WHERE id = new.event_id;
-    UPDATE scenes SET next = old.next WHERE next IS old.id;
-    UPDATE scenes SET previous = old.previous WHERE previous IS old.id;
-END;
+CREATE OR REPLACE FUNCTION period_update() RETURNS trigger AS $$
+    BEGIN
+        UPDATE games SET mtime = now() WHERE id = NEW.game_id;
+        UPDATE periods SET mtime = now() WHERE id = NEW.id;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER period_update AFTER UPDATE ON periods
+    FOR EACH ROW EXECUTE PROCEDURE period_update();
+
+CREATE OR REPLACE FUNCTION event_update() RETURNS trigger AS $$
+    BEGIN
+        UPDATE periods SET mtime = now() WHERE id = NEW.period_id;
+        UPDATE events SET mtime = now() WHERE id = NEW.id;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER event_update AFTER UPDATE ON events
+    FOR EACH ROW EXECUTE PROCEDURE event_update();
+
+CREATE OR REPLACE FUNCTION scene_update() RETURNS trigger AS $$
+    BEGIN
+        UPDATE events SET mtime = now() WHERE id = NEW.event_id;
+        UPDATE scenes SET mtime = now() WHERE id = NEW.id;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER scene_update AFTER UPDATE ON scenes
+    FOR EACH ROW EXECUTE PROCEDURE scene_update();
+
+CREATE OR REPLACE FUNCTION period_delete() RETURNS trigger AS $$
+    BEGIN
+        UPDATE games SET mtime = now() WHERE id = NEW.game_id;
+        UPDATE periods SET next = old.next WHERE next = old.id;
+        UPDATE periods SET previous = old.previous WHERE previous = old.id;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER period_delete AFTER DELETE ON periods
+    FOR EACH ROW EXECUTE PROCEDURE period_delete();
+
+
+CREATE OR REPLACE FUNCTION event_delete() RETURNS trigger AS $$
+    BEGIN
+        UPDATE periods SET mtime = now() WHERE id = NEW.period_id;
+        UPDATE events SET next = old.next WHERE next = old.id;
+        UPDATE events SET previous = old.previous WHERE previous = old.id;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER event_delete AFTER DELETE ON events
+    FOR EACH ROW EXECUTE PROCEDURE event_delete();
+
+CREATE OR REPLACE FUNCTION scene_delete() RETURNS trigger AS $$
+    BEGIN
+        UPDATE events SET mtime = now() WHERE id = NEW.event_id;
+        UPDATE scenes SET next = old.next WHERE next = old.id;
+        UPDATE scenes SET previous = old.previous WHERE previous = old.id;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER scene_delete AFTER DELETE ON scenes
+    FOR EACH ROW EXECUTE PROCEDURE scene_delete();
