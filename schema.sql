@@ -30,10 +30,17 @@ CREATE INDEX event_periodid ON events (period_id);
 
 CREATE INDEX scene_eventid ON scenes (event_id);
 
-CREATE TRIGGER game_insert AFTER INSERT ON games BEGIN
-    UPDATE games SET ctime = datetime("now") WHERE id = new.id;
-    UPDATE games SET mtime = datetime("now") WHERE id = new.id;
-END;
+
+CREATE OR REPLACE FUNCTION game_insert() RETURNS trigger AS $$
+    BEGIN
+        UPDATE games SET ctime = now() WHERE id = NEW.id;
+        UPDATE games SET mtime = now() WHERE id = NEW.id;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER game_insert AFTER INSERT ON games
+    FOR EACH ROW EXECUTE PROCEDURE game_insert();
+
 
 CREATE TRIGGER period_insert AFTER INSERT ON periods BEGIN
     UPDATE periods SET next = new.id WHERE next IS new.next AND id != new.id;
@@ -42,6 +49,7 @@ CREATE TRIGGER period_insert AFTER INSERT ON periods BEGIN
     UPDATE periods SET ctime = datetime("now") WHERE id = new.id;
     UPDATE periods SET mtime = datetime("now") WHERE id = new.id;
 END;
+
 
 CREATE TRIGGER event_insert AFTER INSERT ON events BEGIN
     UPDATE events SET next = new.id WHERE next IS new.next AND id != new.id;
